@@ -56,12 +56,18 @@ init = tf.global_variables_initializer()
 
 #sess
 with tf.Session() as sess:
-    merged = tf.summary.merge_all()
-    writer = tf.summary.FileWriter("logs/", sess.graph)
     sess.run(init)
+    merged = tf.summary.merge_all()
+    writer_05 = tf.summary.FileWriter("logs_keepprob_1/plot1", sess.graph)
+    writer_1 = tf.summary.FileWriter("logs_keepprob_1/plot2", sess.graph)
     for i in range(500):
         sess.run(train_step, feed_dict={xs:X_train, ys:y_train, keep_prob:1})
         if i % 50 == 0:
             print(i)
-            rs = sess.run(merged, feed_dict={xs:X_train, ys:y_train, keep_prob:1})
-            writer.add_summary(rs, i)
+            rl = sess.run(merged, feed_dict={xs:X_train, ys:y_train, keep_prob:1})
+            writer_05.add_summary(rl, i)
+            writer_05.flush()
+
+            rl = sess.run(merged, feed_dict={xs:X_test, ys:y_test, keep_prob:1})
+            writer_1.add_summary(rl, i)
+            writer_1.flush()
