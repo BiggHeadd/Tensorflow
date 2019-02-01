@@ -21,10 +21,19 @@ class model:
         return (weight, bias)
 
     def init_inputs(self, data_x, data_y):
+        with tf.name_scope("inputs"):
+            x = tf.placeholder(tf.float32, [None, len(data_x[0])], name='x')
+            y = tf.placeholder(tf.float32, [None, 10], name='y')
+        return (x, y)
+
+    def accuracy(self):
         pass
 
-    def loss(self):
-        pass
+
+    def loss(self, prediction):
+        with tf.name_scope("loss"):
+            self.cross_entropy = tf.reduce_mean(-tf.reduce_sum(self.y*tf.log(prediction + 0.0000001), reduction_indices=[1]))
+            tf.summary.scalar('loss', self.cross_entropy)
 
     def init_Variables(self):
         pass
@@ -41,9 +50,7 @@ class model:
     def train(self, data_x, data_y):
         features = len(data_x[0])
 
-        with tf.name_scope("inputs"):
-            x = tf.placeholder(tf.float32, [None, len(data_x[0])], name='x')
-            y = tf.placeholder(tf.float32, [None, 10], name='y')
+        self.x, self.y = self.init_inputs(data_x, data_y)
 
         ##########forward propagation
         # hidden_unit = 20
@@ -52,23 +59,24 @@ class model:
 
         output_unit = 10
         w2, b2 = self.init_weights(features, output_unit, "output")
-        prediction = self.forward(x, w2, b2, tf.nn.softmax)
+        prediction = self.forward(self.x, w2, b2, tf.nn.softmax)
         ##########
 
-        with tf.name_scope("loss"):
-            cross_entropy = tf.reduce_mean(-tf.reduce_sum(y*tf.log(prediction + 0.0000001), reduction_indices=[1]))
-            tf.summary.scalar('loss', cross_entropy)
+        self.loss(prediction)
 
         init = tf.global_variables_initializer()
 
-        train_step = tf.train.GradientDescentOptimizer(0.5).minimize(cross_entropy)
+        train_step = tf.train.GradientDescentOptimizer(0.5).minimize(self.cross_entropy)
 
         with tf.Session() as sess:
             sess.run(init)
             for i in range(1000):
-                sess.run(train_step, feed_dict={x:data_x, y:data_y})
+                sess.run(train_step, feed_dict={self.x:data_x, self.y:data_y})
                 if i % 100 == 0:
-                    print("step: {}, loss: {}".format(i, sess.run(cross_entropy, feed_dict={x:data_x, y:data_y})))
+                    correct_prediction = tf.equal(tf.arg_max(self.y, 1), tf.arg_max(prediction, 1))
+                    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+                    print("step: {}, loss: {}, accuracy: {}".format(i, sess.run(self.cross_entropy, feed_dict={self.x:data_x, self.y:data_y}),
+                    sess.run(accuracy, feed_dict={self.x:data_x, self.y:data_y})))
 
 
 if __name__ == "__main__":
